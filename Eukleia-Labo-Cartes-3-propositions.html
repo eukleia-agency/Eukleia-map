@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1B2B4B">
+<title>Labo cartes — 3 propositions · Eukleia</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+<style>
+:root{--navy:#1B2B4B;--gold:#B8975A;--cream:#F7F4EF;--paper:#FFFDF9;--rule:#E4DCCD;--muted:#6B7486;
+--c-home:#B8975A;--c-table:#B8975A;--c-famille:#1B2B4B;--c-barriere:#7E2A33;--c-balade:#6E86A8;--c-trip:#5F7D5A;--c-wellness:#8B6E8F;--c-week:#2F6F73;
+--serif:'Lora',Georgia,serif;--sans:'Poppins',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);color:#232C3F;font-family:var(--serif);line-height:1.55}
+.wrap{max-width:940px;margin:0 auto;padding:0 18px}
+header{background:linear-gradient(165deg,#1B2B4B,#12203B);color:var(--cream);padding:42px 0 26px}
+.brand{font-family:var(--sans);font-size:11px;letter-spacing:.4em;color:#CDB183}
+h1{font-weight:500;font-size:clamp(26px,5vw,36px);margin:12px 0 6px}
+header p{font-style:italic;color:rgba(247,244,239,.85);font-size:15.5px;max-width:44em}
+.tabs{position:sticky;top:0;z-index:50;background:rgba(247,244,239,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.tabs .wrap{display:flex;gap:8px;padding:10px 18px;overflow-x:auto}
+.tabs button{flex:1 0 auto;font-family:var(--sans);font-size:12.5px;font-weight:500;letter-spacing:.05em;padding:10px 16px;border:1px solid var(--rule);border-radius:999px;background:var(--paper);color:var(--navy);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.filters{display:flex;gap:7px;flex-wrap:wrap;padding:14px 0 4px}
+.filters button{font-family:var(--sans);font-size:11px;font-weight:500;border:1px solid var(--rule);border-radius:999px;padding:6px 12px;background:var(--paper);color:var(--navy);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.filters button i{width:8px;height:8px;border-radius:50%}
+.filters button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.panel{display:none;padding:6px 0 40px}
+.panel.on{display:block}
+.stage{position:relative;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--paper);box-shadow:0 14px 40px rgba(18,32,59,.12)}
+.gl{height:66vh;min-height:420px;width:100%}
+#illwrap{max-height:78vh;overflow:auto}
+#illwrap svg{display:block;width:100%;height:auto}
+.town{font-family:'Poppins',sans-serif;font-weight:500;letter-spacing:.28em;fill:#1B2B4B}
+.ital{font-family:'Lora',serif;font-style:italic;letter-spacing:.08em;fill:#5E6B85}
+.ital.gold{fill:#B8975A}
+#illmap .ital{fill:#8fa0bd}
+#illmap text.ital[font-size="20"],#illmap text.ital[font-size="12"]{fill:#B9C6DD}
+.plbl{font-family:'Poppins',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:.04em;fill:#1B2B4B;paint-order:stroke;stroke:#F7F2E6;stroke-width:3px}
+.pin{transition:opacity .25s}
+.pin.dim{opacity:.14}
+.verdict{margin-top:16px;background:var(--paper);border:1px solid var(--rule);border-left:3px solid var(--gold);border-radius:6px;padding:16px 18px;font-size:15px}
+.verdict b{color:var(--navy)}
+.verdict .t{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;display:block;margin-bottom:6px}
+.mk{width:32px;height:32px;border-radius:50%;background:#FFFDF9;border:2.5px solid var(--gold);box-shadow:0 2px 8px rgba(18,32,59,.35);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
+.mk.big{width:38px;height:38px;font-size:18px;border-width:3px}
+.maplibregl-popup-content{font-family:var(--serif);border-radius:6px;border-top:3px solid var(--gold);padding:12px 16px;box-shadow:0 8px 26px rgba(18,32,59,.25)}
+.maplibregl-popup-content strong{display:block;color:var(--navy);font-size:15px;margin-bottom:2px}
+.maplibregl-popup-content a{font-family:var(--sans);font-size:11.5px;color:var(--gold);text-decoration:none;letter-spacing:.05em}
+.note{font-family:var(--sans);font-weight:300;font-size:12px;color:var(--muted);margin-top:10px}
+.err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:var(--cream);font-style:italic;color:var(--muted);padding:20px;text-align:center}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">EUKLEIA · LABO</div>
+  <h1>La carte du guide — trois propositions</h1>
+  <p>Mêmes 34 adresses, trois écritures graphiques. Filtre, pince, incline — et dis-moi laquelle devient la signature Eukleia.</p>
+</div></header>
+
+<div class="tabs"><div class="wrap">
+  <button aria-selected="true" data-p="A">A · 3D inclinée</button>
+  <button aria-selected="false" data-p="B">B · Plate restylée</button>
+  <button aria-selected="false" data-p="C">C · Illustrée</button>
+</div></div>
+
+<div class="wrap">
+  <div class="filters" id="filters">
+    <button data-cat="all" aria-pressed="true">Tout</button>
+    <button data-cat="week" aria-pressed="false"><i style="background:var(--c-week)"></i>Temps forts</button>
+    <button data-cat="famille" aria-pressed="false"><i style="background:var(--c-famille)"></i>Famille</button>
+    <button data-cat="barriere" aria-pressed="false"><i style="background:var(--c-barriere)"></i>Barrière</button>
+    <button data-cat="table" aria-pressed="false"><i style="background:var(--c-table)"></i>Tables</button>
+    <button data-cat="balade" aria-pressed="false"><i style="background:var(--c-balade)"></i>Balades</button>
+    <button data-cat="trip" aria-pressed="false"><i style="background:var(--c-trip)"></i>Excursions</button>
+    <button data-cat="wellness" aria-pressed="false"><i style="background:var(--c-wellness)"></i>Bien-être</button>
+  </div>
+
+  <div class="panel on" id="pA">
+    <div class="stage"><div id="mapA" class="gl"></div><div class="err" id="errA">La carte n'a pas pu se charger — vérifie la connexion et dis-le-moi.</div></div>
+    <div class="verdict"><span class="t">Mon verdict</span><b>L'effet waouh contemporain.</b> Bâtiments en volume, perspective inclinée, palette recolorée navy/crème/or — on pivote à deux doigts. C'est la lecture la plus « 2026 », gratuite et sans clé API. Seule réserve : un peu plus gourmande sur les très vieux téléphones.</div>
+    <p class="note">Deux doigts pour incliner/pivoter · fond OpenFreeMap recoloré en direct, aucune clé requise.</p>
+  </div>
+
+  <div class="panel" id="pB">
+    <div class="stage"><div id="mapB" class="gl"></div><div class="err" id="errB">La carte n'a pas pu se charger — vérifie la connexion et dis-le-moi.</div></div>
+    <div class="verdict"><span class="t">Mon verdict</span><b>La sobriété absolue.</b> Même moteur, à plat, fond très doux : c'est l'option la plus légère et la plus lisible pour trouver un restaurant en 3 secondes. Élégant, mais moins mémorable — la carte redevient un outil, pas une pièce du décor.</div>
+  </div>
+
+  <div class="panel" id="pC">
+    <div class="stage"><div id="illwrap"><svg id="illmap" viewBox="0 0 794 1150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Carte illustrée de la Côte Fleurie">
+  <defs>
+    <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1B2B4B"/><stop offset="1" stop-color="#2B4066"/>
+    </linearGradient>
+    <pattern id="waves" width="90" height="26" patternUnits="userSpaceOnUse">
+      <path d="M0 13 q 11 -8 22 0 t 22 0 t 22 0 t 22 0" fill="none" stroke="#F7F4EF" stroke-opacity=".10" stroke-width="1.6"/>
+    </pattern>
+  </defs>
+  <rect width="794" height="1150" fill="#F3EEE3"/>
+  <path d="M 0.0,656.2 C 18.4,652.8 84.5,643.8 110.2,635.9 C 135.9,628.0 136.7,622.3 154.3,608.8 C 171.9,595.3 198.4,569.9 216.0,554.7 C 233.6,539.5 248.3,527.6 260.1,517.5 C 271.9,507.4 278.0,501.1 286.6,493.8 C 295.2,486.5 306.5,478.9 311.9,473.5 C 317.3,468.1 317.7,461.4 319.2,461.7 C 320.7,462.0 319.4,472.1 320.7,475.2 C 321.9,478.3 325.4,482.3 326.7,480.3 C 328.0,478.3 327.4,467.6 328.4,463.4 C 329.3,459.2 330.2,457.7 332.4,454.9 C 334.6,452.1 336.1,452.4 341.7,446.5 C 347.3,440.6 358.6,427.9 365.9,419.4 C 373.2,410.9 373.9,409.8 385.7,395.7 C 397.4,381.6 419.9,347.9 436.4,334.9 C 452.9,321.9 467.6,323.0 484.9,317.9 C 502.2,312.8 519.8,310.0 540.0,304.4 C 560.2,298.8 586.7,291.7 606.2,284.1 C 625.7,276.5 642.2,265.6 656.9,258.8 C 671.6,252.0 671.5,251.1 694.3,243.5 C 717.1,235.9 777.0,218.2 793.5,213.1 L 794,0 L 0,0 Z" fill="url(#seaG)"/>
+  <path d="M 0.0,656.2 C 18.4,652.8 84.5,643.8 110.2,635.9 C 135.9,628.0 136.7,622.3 154.3,608.8 C 171.9,595.3 198.4,569.9 216.0,554.7 C 233.6,539.5 248.3,527.6 260.1,517.5 C 271.9,507.4 278.0,501.1 286.6,493.8 C 295.2,486.5 306.5,478.9 311.9,473.5 C 317.3,468.1 317.7,461.4 319.2,461.7 C 320.7,462.0 319.4,472.1 320.7,475.2 C 321.9,478.3 325.4,482.3 326.7,480.3 C 328.0,478.3 327.4,467.6 328.4,463.4 C 329.3,459.2 330.2,457.7 332.4,454.9 C 334.6,452.1 336.1,452.4 341.7,446.5 C 347.3,440.6 358.6,427.9 365.9,419.4 C 373.2,410.9 373.9,409.8 385.7,395.7 C 397.4,381.6 419.9,347.9 436.4,334.9 C 452.9,321.9 467.6,323.0 484.9,317.9 C 502.2,312.8 519.8,310.0 540.0,304.4 C 560.2,298.8 586.7,291.7 606.2,284.1 C 625.7,276.5 642.2,265.6 656.9,258.8 C 671.6,252.0 671.5,251.1 694.3,243.5 C 717.1,235.9 777.0,218.2 793.5,213.1 L 794,0 L 0,0 Z" fill="url(#waves)"/>
+  <path d="M 253.5,0.0 C 257.2,12.4 264.5,54.7 275.5,74.4 C 286.5,94.1 303.1,107.1 319.6,118.4 C 336.1,129.7 352.6,140.4 374.7,142.1 C 396.8,143.8 428.0,136.4 451.9,128.5 C 475.8,120.6 497.8,108.8 518.0,94.7 C 538.2,80.6 560.2,59.8 573.1,44.0 C 586.0,28.2 591.5,7.3 595.2,0.0  L 595.2,0 L 253.5,0 Z" fill="#EDE6D6" stroke="#B8975A" stroke-width="1.2"/>
+  <path d="M 0.0,656.2 C 18.4,652.8 84.5,643.8 110.2,635.9 C 135.9,628.0 136.7,622.3 154.3,608.8 C 171.9,595.3 198.4,569.9 216.0,554.7 C 233.6,539.5 248.3,527.6 260.1,517.5 C 271.9,507.4 278.0,501.1 286.6,493.8 C 295.2,486.5 306.5,478.9 311.9,473.5 C 317.3,468.1 317.7,461.4 319.2,461.7 C 320.7,462.0 319.4,472.1 320.7,475.2 C 321.9,478.3 325.4,482.3 326.7,480.3 C 328.0,478.3 327.4,467.6 328.4,463.4 C 329.3,459.2 330.2,457.7 332.4,454.9 C 334.6,452.1 336.1,452.4 341.7,446.5 C 347.3,440.6 358.6,427.9 365.9,419.4 C 373.2,410.9 373.9,409.8 385.7,395.7 C 397.4,381.6 419.9,347.9 436.4,334.9 C 452.9,321.9 467.6,323.0 484.9,317.9 C 502.2,312.8 519.8,310.0 540.0,304.4 C 560.2,298.8 586.7,291.7 606.2,284.1 C 625.7,276.5 642.2,265.6 656.9,258.8 C 671.6,252.0 671.5,251.1 694.3,243.5 C 717.1,235.9 777.0,218.2 793.5,213.1 L 794,1150 L 0,1150 Z" fill="#F7F2E6"/>
+  <path d="M 0.0,656.2 C 18.4,652.8 84.5,643.8 110.2,635.9 C 135.9,628.0 136.7,622.3 154.3,608.8 C 171.9,595.3 198.4,569.9 216.0,554.7 C 233.6,539.5 248.3,527.6 260.1,517.5 C 271.9,507.4 278.0,501.1 286.6,493.8 C 295.2,486.5 306.5,478.9 311.9,473.5 C 317.3,468.1 317.7,461.4 319.2,461.7 C 320.7,462.0 319.4,472.1 320.7,475.2 C 321.9,478.3 325.4,482.3 326.7,480.3 C 328.0,478.3 327.4,467.6 328.4,463.4 C 329.3,459.2 330.2,457.7 332.4,454.9 C 334.6,452.1 336.1,452.4 341.7,446.5 C 347.3,440.6 358.6,427.9 365.9,419.4 C 373.2,410.9 373.9,409.8 385.7,395.7 C 397.4,381.6 419.9,347.9 436.4,334.9 C 452.9,321.9 467.6,323.0 484.9,317.9 C 502.2,312.8 519.8,310.0 540.0,304.4 C 560.2,298.8 586.7,291.7 606.2,284.1 C 625.7,276.5 642.2,265.6 656.9,258.8 C 671.6,252.0 671.5,251.1 694.3,243.5 C 717.1,235.9 777.0,218.2 793.5,213.1 " fill="none" stroke="#B8975A" stroke-width="5" stroke-opacity=".55"/>
+  <path d="M 0.0,656.2 C 18.4,652.8 84.5,643.8 110.2,635.9 C 135.9,628.0 136.7,622.3 154.3,608.8 C 171.9,595.3 198.4,569.9 216.0,554.7 C 233.6,539.5 248.3,527.6 260.1,517.5 C 271.9,507.4 278.0,501.1 286.6,493.8 C 295.2,486.5 306.5,478.9 311.9,473.5 C 317.3,468.1 317.7,461.4 319.2,461.7 C 320.7,462.0 319.4,472.1 320.7,475.2 C 321.9,478.3 325.4,482.3 326.7,480.3 C 328.0,478.3 327.4,467.6 328.4,463.4 C 329.3,459.2 330.2,457.7 332.4,454.9 C 334.6,452.1 336.1,452.4 341.7,446.5 C 347.3,440.6 358.6,427.9 365.9,419.4 C 373.2,410.9 373.9,409.8 385.7,395.7 C 397.4,381.6 419.9,347.9 436.4,334.9 C 452.9,321.9 467.6,323.0 484.9,317.9 C 502.2,312.8 519.8,310.0 540.0,304.4 C 560.2,298.8 586.7,291.7 606.2,284.1 C 625.7,276.5 642.2,265.6 656.9,258.8 C 671.6,252.0 671.5,251.1 694.3,243.5 C 717.1,235.9 777.0,218.2 793.5,213.1 " fill="none" stroke="#1B2B4B" stroke-width="1.6"/>
+  <path d="M 326.7,480.3 C 327.7,483.7 329.9,493.3 332.8,500.6 C 335.7,507.9 339.8,515.8 343.9,524.3 C 347.9,532.8 353.1,542.3 357.1,551.3 C 361.1,560.3 366.6,567.7 368.1,578.4 C 369.6,589.1 364.4,602.6 365.9,615.6 C 367.4,628.6 372.5,641.6 376.9,656.2 C 381.3,670.9 389.8,695.6 392.4,703.5 " fill="none" stroke="#2B4066" stroke-width="3.4" stroke-linecap="round" stroke-opacity=".8"/>
+  <path class="dash" d="M 328.4,460.0 C 330.6,439.7 336.9,378.2 341.7,338.2 C 346.5,298.2 351.6,252.0 357.1,219.9 C 362.6,187.8 371.8,157.8 374.7,145.4 " fill="none" stroke="#B8975A" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/>
+  <text class="ital gold" x="361.5" y="236.8" font-size="11" text-anchor="middle" transform="rotate(-63 361.5 236.8)">Traversée · sam. 9h</text>
+  <text class="town" x="299.8" y="510.7" text-anchor="middle" font-size="15">DEAUVILLE</text>
+<text class="town" x="361.5" y="432.9" text-anchor="middle" font-size="13">TROUVILLE</text>
+<text class="town" x="163.1" y="632.5" text-anchor="middle" font-size="11">VILLERS-SUR-MER</text>
+<text class="town" x="249.1" y="500.6" text-anchor="middle" font-size="10">BÉNERVILLE</text>
+<text class="town" x="372.5" y="531.0" text-anchor="middle" font-size="10">TOUQUES</text>
+<text class="town" x="694.3" y="277.4" text-anchor="middle" font-size="12">HONFLEUR</text>
+<text class="town" x="407.8" y="74.4" text-anchor="middle" font-size="13">LE HAVRE</text>
+<text class="town ital" x="220.4" y="270.6" text-anchor="middle" font-size="20">La Manche</text>
+<text class="town ital" x="480.5" y="192.8" text-anchor="middle" font-size="12">Estuaire de la Seine</text>
+<text class="town ital" x="242.5" y="879.4" text-anchor="middle" font-size="14">Pays d'Auge</text>
+
+  <g id="compass" transform="translate(730,74)">
+    <circle r="26" fill="none" stroke="#B8975A" stroke-width="1.4"/>
+    <path d="M0,-22 L6,8 L0,2 L-6,8 Z" fill="#1B2B4B"/><text y="-32" text-anchor="middle" font-size="13" fill="#1B2B4B" font-family="Lora,serif">N</text>
+  </g>
+  <g class="pin" data-cat="home"><circle cx="315.9" cy="465.4" r="18" fill="#FFFDF9" stroke="var(--c-home)" stroke-width="2.5"/><text x="315.9" y="470.4" text-anchor="middle" font-size="15">⭐</text><text class="plbl" x="293.9" y="469.4" text-anchor="end">Le Landemer</text></g>
+<g class="pin" data-cat="table"><circle cx="332.4" cy="462.7" r="15" fill="#FFFDF9" stroke="var(--c-table)" stroke-width="2.5"/><text x="332.4" y="467.7" text-anchor="middle" font-size="15">🦪</text><text class="plbl" x="354.4" y="466.7" text-anchor="start">Le Deauville</text></g>
+<g class="pin" data-cat="table"><circle cx="334.8" cy="455.6" r="15" fill="#FFFDF9" stroke="var(--c-table)" stroke-width="2.5"/><text x="334.8" y="460.6" text-anchor="middle" font-size="15">🦐</text><text class="plbl" x="356.8" y="459.6" text-anchor="start">Les Vapeurs</text></g>
+<g class="pin" data-cat="week"><circle cx="345.0" cy="441.4" r="15" fill="#FFFDF9" stroke="var(--c-week)" stroke-width="2.5"/><text x="345.0" y="446.4" text-anchor="middle" font-size="15">🧺</text><text class="plbl" x="367.0" y="445.4" text-anchor="start">Marché & halles</text></g>
+<g class="pin" data-cat="barriere"><circle cx="307.3" cy="474.9" r="15" fill="#FFFDF9" stroke="var(--c-barriere)" stroke-width="2.5"/><text x="307.3" y="479.9" text-anchor="middle" font-size="15">🎰</text><text class="plbl" x="285.3" y="478.9" text-anchor="end">Casino</text></g>
+<g class="pin" data-cat="barriere"><circle cx="312.1" cy="485.4" r="15" fill="#FFFDF9" stroke="var(--c-barriere)" stroke-width="2.5"/><text x="312.1" y="490.4" text-anchor="middle" font-size="15">🏨</text><text class="plbl" x="290.1" y="489.4" text-anchor="end">Le Normandy</text></g>
+<g class="pin" data-cat="week"><circle cx="301.1" cy="499.2" r="15" fill="#FFFDF9" stroke="var(--c-week)" stroke-width="2.5"/><text x="301.1" y="504.2" text-anchor="middle" font-size="15">🎨</text><text class="plbl" x="279.1" y="503.2" text-anchor="end">Les Franciscaines</text></g>
+<g class="pin" data-cat="famille"><circle cx="294.5" cy="474.2" r="15" fill="#FFFDF9" stroke="var(--c-famille)" stroke-width="2.5"/><text x="294.5" y="479.2" text-anchor="middle" font-size="15">🤸</text><text class="plbl" x="272.5" y="478.2" text-anchor="end">Happy Club</text></g>
+<g class="pin" data-cat="barriere"><circle cx="328.0" cy="541.5" r="15" fill="#FFFDF9" stroke="var(--c-barriere)" stroke-width="2.5"/><text x="328.0" y="546.5" text-anchor="middle" font-size="15">⛳</text><text class="plbl" x="350.0" y="545.5" text-anchor="start">Golf Barrière</text></g>
+<g class="pin" data-cat="balade"><circle cx="242.9" cy="538.8" r="15" fill="#FFFDF9" stroke="var(--c-balade)" stroke-width="2.5"/><text x="242.9" y="543.8" text-anchor="middle" font-size="15">🌄</text><text class="plbl" x="220.9" y="542.8" text-anchor="end">Mont Canisy</text></g>
+<g class="pin" data-cat="table"><circle cx="258.8" cy="511.7" r="15" fill="#FFFDF9" stroke="var(--c-table)" stroke-width="2.5"/><text x="258.8" y="516.7" text-anchor="middle" font-size="15">🏖️</text><text class="plbl" x="236.8" y="515.7" text-anchor="end">Les Ammonites</text></g>
+<g class="pin" data-cat="famille"><circle cx="183.4" cy="582.4" r="15" fill="#FFFDF9" stroke="var(--c-famille)" stroke-width="2.5"/><text x="183.4" y="587.4" text-anchor="middle" font-size="15">🦖</text><text class="plbl" x="161.4" y="586.4" text-anchor="end">Paléospace</text></g>
+<g class="pin" data-cat="balade"><circle cx="427.2" cy="343.3" r="15" fill="#FFFDF9" stroke="var(--c-balade)" stroke-width="2.5"/><text x="427.2" y="348.3" text-anchor="middle" font-size="15">🐚</text><text class="plbl" x="449.2" y="347.3" text-anchor="start">Villerville</text></g>
+<g class="pin" data-cat="trip"><circle cx="668.3" cy="265.5" r="15" fill="#FFFDF9" stroke="var(--c-trip)" stroke-width="2.5"/><text x="668.3" y="270.5" text-anchor="middle" font-size="15">⚓</text><text class="plbl" x="690.3" y="269.5" text-anchor="start">Honfleur</text></g>
+<g class="pin" data-cat="famille"><circle cx="659.7" cy="240.1" r="15" fill="#FFFDF9" stroke="var(--c-famille)" stroke-width="2.5"/><text x="659.7" y="245.1" text-anchor="middle" font-size="15">🦋</text><text class="plbl" x="637.7" y="244.1" text-anchor="end">Naturospace</text></g>
+<g class="pin" data-cat="trip"><circle cx="518.7" cy="660.9" r="15" fill="#FFFDF9" stroke="var(--c-trip)" stroke-width="2.5"/><text x="518.7" y="665.9" text-anchor="middle" font-size="15">🥃</text><text class="plbl" x="540.7" y="664.9" text-anchor="start">Drouin</text></g>
+<g class="pin" data-cat="trip"><circle cx="498.4" cy="457.6" r="15" fill="#FFFDF9" stroke="var(--c-trip)" stroke-width="2.5"/><text x="498.4" y="462.6" text-anchor="middle" font-size="15">✈️</text><text class="plbl" x="520.4" y="461.6" text-anchor="start">Aérodrome</text></g>
+<g class="pin" data-cat="trip"><circle cx="50.3" cy="1057.0" r="15" fill="#FFFDF9" stroke="var(--c-trip)" stroke-width="2.5"/><text x="50.3" y="1062.0" text-anchor="middle" font-size="15">🍎</text><text class="plbl" x="72.3" y="1061.0" text-anchor="start">Beuvron-en-Auge</text></g>
+
+  <g transform="translate(24,1046)">
+    <rect width="330" height="80" fill="#FFFDF9" stroke="#B8975A" stroke-width="1.4"/>
+    <rect x="5" y="5" width="320" height="70" fill="none" stroke="#1B2B4B" stroke-width=".8"/>
+    <text x="165" y="34" text-anchor="middle" font-family="Lora,serif" font-style="italic" font-size="17" fill="#1B2B4B">La Côte Fleurie</text>
+    <text x="165" y="56" text-anchor="middle" font-family="Poppins,sans-serif" font-size="8.5" letter-spacing="3" fill="#B8975A">CARNET EUKLEIA · MAQUETTE D'INTENTION</text>
+  </g>
+</svg></div></div>
+    <div class="verdict"><span class="t">Mon verdict</span><b>La signature palace.</b> Une carte dessinée aux couleurs de la maison, géographiquement juste (chaque pin est projeté depuis ses vraies coordonnées) — c'est l'objet qu'on a envie d'imprimer et d'encadrer dans chaque bien. Contreparties : pas de zoom ni d'itinéraire intégré, et chaque nouvelle adresse demande une retouche. Idéale en <i>ouverture</i> du guide, adossée à une carte interactive A ou B pour la navigation.</div>
+    <p class="note">Maquette d'intention réalisée en SVG — un illustrateur (ou moi, avec plus d'itérations) pousserait le trait : reliefs, voiliers, hachures d'époque.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script>
+var PLACES=[
+ {n:"🏠 Le Landemer — Résidence Port-Deauville",cat:"home",lat:49.3623988,lng:0.0733326,pid:"ChIJvXkYWLPU4UcR2WgCq7GUsfE",de:"Ihr Zuhause für diese Tage.",en:"Your home for the stay."},
+ {n:"🦪 Le Deauville",cat:"table",lat:49.363166,lng:0.0807689,pid:"ChIJ87NRzAHV4UcRnZYSdAuC2Ds",de:"Die schöne Adresse des Hafens, 3 Min zu Fuß · geschl. Di–Mi.",en:"The port's fine table, 3 min on foot · closed Tue–Wed."},
+ {n:"🍽️ Le Drakkar",cat:"table",lat:49.3594353,lng:0.0732745,pid:"ChIJfyelmrHU4UcRTk5ofRXqsfQ",de:"Schicke Brasserie · täglich bis Mitternacht.",en:"Chic brasserie · daily until midnight."},
+ {n:"🦐 Les Vapeurs / Les Voiles",cat:"table",lat:49.3653063,lng:0.0819165,pid:"ChIJd5lnU6vU4UcRU6LthI9Zuwo",de:"Die Kai-Brasserien seit 1927 · tägl. 9–23:30.",en:"The 1927 quayside brasseries · daily 9 am–11:30 pm."},
+ {n:"🦞 Augusto Chez Laurent",cat:"table",lat:49.3596828,lng:0.0783837,pid:"ChIJvyOfe67U4UcRm9a76JSAHlY",de:"Hummer seit 1926 · geschlossen Mittwoch.",en:"Lobster since 1926 · closed Wed."},
+ {n:"🍣 Kyo",cat:"table",lat:49.3601244,lng:0.0755986,pid:"ChIJ5bOmI0fV4UcR-4Yxldfq6VM",de:"Japanisch, liefert ins Apartment.",en:"Japanese, delivers to the apartment."},
+ {n:"☕ Le Hibouville",cat:"table",lat:49.3600339,lng:0.077261,pid:"ChIJNZvavr_V4UcRLuPDOQEFeHY",de:"Ganztags-Café, familienfreundlich · tägl. 8–1 Uhr.",en:"All-day café, family-friendly · daily 8 am–1 am."},
+ {n:"🍰 Café Marius",cat:"table",lat:49.3588473,lng:0.0714861,pid:"ChIJj7JOSLHU4UcRgrOqlsUSOXU",de:"Deko-Boutique unten, Rooftop-Teesalon oben · geschl. Mi–Do.",en:"Décor boutique below, rooftop tea room above · closed Wed–Thu."},
+ {n:"🥗 Le Réfectoire des Franciscaines",cat:"table",lat:49.3541383,lng:0.0667612,pid:"ChIJWUKwnh3V4UcR_ZH_rV3QLpQ",de:"Mittagessen unter der Glasdecke · Di–So.",en:"Lunch under the glass roof · Tue–Sun."},
+ {n:"🏖️ Les Ammonites",cat:"table",lat:49.3487397,lng:0.0473982,pid:"ChIJcU7Fwd7U4UcRbUrLxuMSJKE",de:"Strandterrasse, Bénerville · täglich bis Mitternacht.",en:"Beach terrace, Bénerville · daily until midnight."},
+ {n:"🌅 La Brise Marine",cat:"table",lat:49.4000184,lng:0.1238588,pid:"ChIJ5YuoCwAt4EcRh7qo8b8yIyE",de:"Austern zum Sonnenuntergang, Villerville.",en:"Sunset oysters, Villerville."},
+ {n:"🍸 Le Brok",cat:"table",lat:49.3580616,lng:0.0711123,pid:"ChIJrfdPKbHU4UcRC8v3UdWltGk",de:"Cocktailbar · täglich 17–1 Uhr.",en:"Cocktail bar · daily 5 pm–1 am."},
+ {n:"🤸 Happy Club Deauville",cat:"famille",lat:49.3588171,lng:0.0636384,pid:"ChIJb_zQk4XV4UcRN9_nECWx7sY",de:"Strandclub an den Planches, 2–14 Jahre.",en:"Beach club on Les Planches, ages 2–14."},
+ {n:"🦖 Paléospace",cat:"famille",lat:49.3278268,lng:0.0131693,pid:"ChIJFwpmxX5_CkgRl8rKLCwiOuY",de:"Dinos, Fossilien & Planetarium · tägl. 9:30–19 Uhr.",en:"Dinos, fossils & planetarium · daily 9:30 am–7 pm."},
+ {n:"🦋 Naturospace",cat:"famille",lat:49.4256924,lng:0.2293503,pid:"ChIJob0crLkz4EcRqpAYNqGh1Eg",de:"Tropenhaus voller Schmetterlinge, Honfleur · tägl. 9:30–19:30.",en:"Tropical butterfly house, Honfleur · daily 9:30 am–7:30 pm."},
+ {n:"🥂 Ciro's",cat:"barriere",lat:49.3602562,lng:0.065656,pid:"ChIJI4SUxrbU4UcR60dgdSFZh58",de:"Die Institution der Planches seit den Zwanzigern.",en:"The Planches institution since the twenties."},
+ {n:"☀️ Le Bar du Soleil",cat:"barriere",lat:49.3608665,lng:0.0666234,pid:"ChIJw8FwyrXU4UcRqHeDaK8z5PI",de:"Trattoria unter der Art-déco-Pergola · 10–19 Uhr.",en:"Trattoria under the Art Deco pergola · 10 am–7 pm."},
+ {n:"🔥 La Villa sur la Plage",cat:"barriere",lat:49.3548741,lng:0.0571068,pid:"ChIJtW0AgsXU4UcROsTbZHj2dpQ",de:"Beach-House-Barbecue auf dem Sand, Tourgéville.",en:"Beach-house barbecue on the sand, Tourgéville."},
+ {n:"🎰 Casino Barrière",cat:"barriere",lat:49.3595943,lng:0.069416,pid:"ChIJoaGjwLbU4UcRn4lt4kjaKwA",de:"Die Legende von 1912 · ab 18 Jahren.",en:"The 1912 legend · 18+."},
+ {n:"⛳ Golf Barrière & Club House",cat:"barriere",lat:49.3398702,lng:0.0787994,pid:"ChIJbaRuMifT4UcRmkmA5Hq48OQ",de:"Tom Simpson 1929 · Mittagessen über den Greens.",en:"Tom Simpson 1929 · lunch over the greens."},
+ {n:"🏨 Hôtel Le Normandy",cat:"barriere",lat:49.3600179,lng:0.071613,pid:"ChIJ7dc0ULHU4UcRapdcD0OZB7Y",de:"Palast von 1912 · Belle Époque, Bar & Spa Guerlain.",en:"1912 palace · Belle Époque room, bar & Spa Guerlain."},
+ {n:"🎨 Les Franciscaines",cat:"week",lat:49.3544194,lng:0.0666102,pid:"ChIJT_Hx4ALV4UcR84ZQLWCXN38",de:"Glaskreuzgang & Raoul-Dufy-Ausstellung · Di–So.",en:"Glass cloister & the Raoul Dufy show · Tue–Sun."},
+ {n:"🎶 Sable Show — Villers",cat:"week",lat:49.3255,lng:0.0143,pid:"",de:"Gratis-Konzert am Meer · Fr ~21 Uhr.",en:"Free seafront concert · Fri ~9 pm."},
+ {n:"⛴️ Traversée de l'estuaire — Hafen",cat:"week",lat:49.3638,lng:0.0795,pid:"",de:"Sa 25 · 9 Uhr Richtung Le Havre · Anleger wird bestätigt.",en:"Sat 25 · 9 am to Le Havre · berth to be confirmed."},
+ {n:"🧺 Sonntagsmarkt & Fischhallen",cat:"week",lat:49.3649408,lng:0.0818722,pid:"ChIJvQ7RVqvU4UcRHJ0Vi_ZzhAo",de:"Großer Markt So-Vormittag · Fischhallen täglich.",en:"Grand market Sun morning · fish halls daily."},
+ {n:"🌄 Batteries du Mont Canisy",cat:"balade",lat:49.340708,lng:0.0401741,pid:"ChIJAcvfJfDU4UcR-Qr92EnGI7E",de:"Der schönste Balkon der Küste · Sonnenuntergang.",en:"The coast's finest balcony · sunset."},
+ {n:"🌾 Marais de Villers-Blonville",cat:"balade",lat:49.325526,lng:0.0143012,pid:"ChIJOYhjOnbV4UcR2WTNJd1ysMQ",de:"Flache Pfade, Reiher & Spielplatz — ideal für kleine Beine.",en:"Flat paths, herons & a playground — ideal for little legs."},
+ {n:"🐚 Villerville & Roches Noires",cat:"balade",lat:49.3971067,lng:0.1238125,pid:"ChIJZdvPHR8t4EcRY-v7NP-KQO0",de:"Künstlerdorf & Küstenpfad.",en:"Artists' village & cliff path."},
+ {n:"⛴️ Trouville & Le Bac",cat:"balade",lat:49.3661,lng:0.0812,pid:"",de:"Fischerviertel, Gassen — und die kleine Fähre bei Flut.",en:"Fishing quarter, lanes — and the little ferry at high tide."},
+ {n:"⚓ Honfleur",cat:"trip",lat:49.420192,lng:0.233191,pid:"ChIJIQIjZUEz4EcRg0ABmlMekGQ",de:"Das alte Hafenbecken & die Malergalerien · 25 Min.",en:"The old basin & the painters' galleries · 25 min."},
+ {n:"🍎 Beuvron-en-Auge",cat:"trip",lat:49.187461,lng:-0.047156,pid:"ChIJnYTNWnZ3CkgRVv75Nm32EK8",de:"Fachwerkdorf & Route du Cidre · 35 Min.",en:"Half-timbered village & the Cider Route · 35 min."},
+ {n:"🥃 Calvados Christian Drouin",cat:"trip",lat:49.3045727,lng:0.1653163,pid:"ChIJzyXNOQrS4UcRW3t6i--Iv7o",de:"Brennerei im Fachwerkhof · Mo–Sa.",en:"17th-c. distillery, tour & tasting · Mon–Sat."},
+ {n:"✈️ Aérodrome de Saint-Gatien",cat:"trip",lat:49.3647496,lng:0.156069,pid:"ChIJCe_bsLTS4UcRUb2bClQyDTc",de:"Panoramaflüge über die Küste · via Concierge.",en:"Scenic flights over the coast · via concierge."},
+ {n:"🧖 Maison Douce Époque",cat:"wellness",lat:49.3374979,lng:0.0543374,pid:"ChIJ0VvdENvV4UcRy0wuH-2S0mc",de:"Art-déco-Haus: Rooftop, Küche, Pool & Spa.",en:"Art Deco house: rooftop, table, pool & spa."}
+];
+var CC={home:'#B8975A',table:'#B8975A',famille:'#1B2B4B',barriere:'#7E2A33',balade:'#6E86A8',trip:'#5F7D5A',wellness:'#8B6E8F',week:'#2F6F73'};
+function gm(la,ln,pid){return 'https://www.google.com/maps/search/?api=1&query='+la+','+ln+(pid?'&query_place_id='+pid:'');}
+var maps={},marks={A:[],B:[]},inited={};
+
+function recolor(map,mode){
+  var st=map.getStyle();if(!st||!st.layers)return;
+  st.layers.forEach(function(l){
+    var id=l.id.toLowerCase();
+    function set(p,v){try{map.setPaintProperty(l.id,p,v);}catch(e){}}
+    if(l.type==='background'){set('background-color','#F3EEE3');}
+    if(l.type==='fill'){
+      if(id.indexOf('water')>-1){set('fill-color', mode==='A'?'#22355B':'#C7D2DE');}
+      else if(/landcover|park|grass|wood|forest|cemetery|golf/.test(id)){set('fill-color','#E9EDE0');}
+      else if(/sand|beach/.test(id)){set('fill-color','#F0E4C8');}
+      else if(id.indexOf('building')>-1){ if(mode==='A'){set('fill-opacity',0);} else {set('fill-color','#E8E0D0');set('fill-outline-color','#D8CDB8');} }
+      else if(/residential|landuse/.test(id)){set('fill-color','#F1EBDD');}
+    }
+    if(l.type==='line'){
+      if(id.indexOf('water')>-1||id.indexOf('river')>-1){set('line-color', mode==='A'?'#2B4066':'#AFC0D2');}
+      else if(/motorway|trunk|primary/.test(id)){set('line-color','#D9C69A');}
+      else if(/road|street|minor|secondary|tertiary|path|rail|bridge|tunnel/.test(id)){set('line-color','#E7DCC6');}
+      else if(/boundary|admin/.test(id)){set('line-color','#C4B9A2');}
+    }
+    if(l.type==='symbol'){set('text-color','#1B2B4B');set('text-halo-color','#F7F4EF');set('text-halo-width',1.2);}
+  });
+  if(mode==='A'){
+    try{
+      var bl=st.layers.filter(function(l){return l['source-layer']==='building';})[0];
+      var src=bl?bl.source:Object.keys(st.sources).filter(function(k){return st.sources[k].type==='vector';})[0];
+      if(src&&!map.getLayer('eukleia-3d')){
+        map.addLayer({id:'eukleia-3d',type:'fill-extrusion',source:src,'source-layer':'building',minzoom:12.5,
+          paint:{'fill-extrusion-color':'#E6DDC9','fill-extrusion-height':['coalesce',['get','render_height'],['get','height'],9],
+                 'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':0.9}});
+      }
+    }catch(e){}
+  }
+}
+function addMarks(key,map){
+  PLACES.forEach(function(p){
+    var el=document.createElement('div');
+    el.className='mk'+(p.cat==='home'?' big':'');
+    el.style.borderColor=CC[p.cat]||'#B8975A';
+    el.textContent=(p.n.match(/^\S+/)||['📍'])[0];
+    el.dataset.cat=p.cat;
+    var pop=new maplibregl.Popup({offset:16}).setHTML('<strong>'+p.n+'</strong><span>'+(p.de? p.de:'')+'</span><br><a href="'+gm(p.lat,p.lng,p.pid)+'" target="_blank" rel="noopener">Itinéraire ↗</a>');
+    var mk=new maplibregl.Marker({element:el}).setLngLat([p.lng,p.lat]).setPopup(pop).addTo(map);
+    marks[key].push(mk);
+  });
+}
+function initGL(key){
+  if(inited[key])return;inited[key]=true;
+  if(typeof maplibregl==='undefined'){document.getElementById('err'+key).style.display='flex';return;}
+  var A=key==='A';
+  try{
+    var map=new maplibregl.Map({container:'map'+key,
+      style:'https://tiles.openfreemap.org/styles/'+(A?'liberty':'positron'),
+      center:A?[0.0755,49.361]:[0.10,49.36], zoom:A?12:10.6,
+      pitch:A?55:0, bearing:A?-18:0, maxPitch:70, attributionControl:{compact:true}});
+    map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
+    map.on('load',function(){
+      recolor(map,key);
+      addMarks(key,map);
+      applyFilter(curCat);
+      if(A){map.flyTo({center:[0.0733,49.3624],zoom:13.6,pitch:57,bearing:-24,duration:2600,essential:false});}
+    });
+    map.on('error',function(){});
+    maps[key]=map;
+  }catch(e){document.getElementById('err'+key).style.display='flex';}
+}
+var curCat='all';
+function applyFilter(cat){
+  curCat=cat;
+  ['A','B'].forEach(function(k){marks[k].forEach(function(mk){
+    var c=mk.getElement().dataset.cat;
+    mk.getElement().style.display=(cat==='all'||c===cat||c==='home')?'flex':'none';});});
+  document.querySelectorAll('#illmap .pin').forEach(function(g){
+    var c=g.dataset.cat;
+    g.classList.toggle('dim',!(cat==='all'||c===cat||c==='home'));});
+}
+document.getElementById('filters').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#filters button').forEach(function(x){x.setAttribute('aria-pressed','false');});
+  b.setAttribute('aria-pressed','true');applyFilter(b.dataset.cat);
+});
+document.querySelector('.tabs .wrap').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('.tabs button').forEach(function(x){x.setAttribute('aria-selected','false');});
+  b.setAttribute('aria-selected','true');
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.getElementById('p'+b.dataset.p).classList.add('on');
+  if(b.dataset.p!=='C'){initGL(b.dataset.p);setTimeout(function(){maps[b.dataset.p]&&maps[b.dataset.p].resize();},60);}
+});
+initGL('A');
+</script>
+</body>
+</html>
